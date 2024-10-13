@@ -1,6 +1,9 @@
 # 🩺 SimpleDebugger
 
-A minimal demonstration of breakpoints in an iOS app debugger. It can be used for function hooking, like a very lightweight Frida. It’s mainly for demonstration/learning purposes. Works on arm64 simulator and device.
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2FEmergeTools%2FSimpleDebugger%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/EmergeTools/SimpleDebugger)
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2FEmergeTools%2FSimpleDebugger%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/EmergeTools/SimpleDebugger)
+
+A minimal demonstration of breakpoints in an iOS app debugger. It can be used for function hooking, like a very lightweight Frida. It’s mainly for demonstration/learning purposes, the entire implementation is less than 200 lines of code. Works on arm64 simulator and device.
 
 # Getting started
 
