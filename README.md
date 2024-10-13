@@ -34,14 +34,17 @@ void breakpointCallback(arm_thread_state64_t state, std::function<void()> sendRe
     sendReply();
 }
 
-SimpleDebugger *debugger = new SimpleDebugger();
-debugger->setExceptionCallback(breakpointCallback);
-debugger->setBreakpoint((vm_address_t) &myFunction);
-// You must call start debugging to set up the exception server.
-debugger->startDebugging();
+__attribute__((constructor)) void example(void);
+__attribute__((constructor)) void setup() {
+  SimpleDebugger *debugger = new SimpleDebugger();
+  debugger->setExceptionCallback(breakpointCallback);
+  debugger->setBreakpoint((vm_address_t) &myFunction);
+  // You must call start debugging to set up the exception server.
+  debugger->startDebugging();
 
-// The breakpoint handler will run before myFunction
-myFunction();
+  // The breakpoint handler will run before myFunction
+  myFunction();
+}
 ```
 
 # How it works
