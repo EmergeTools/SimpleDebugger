@@ -56,7 +56,7 @@ void protectPage(vm_address_t address, vm_size_t size, vm_prot_t newProtection) 
   kern_return_t result = vm_protect(mach_task_self(), address, size, 0, newProtection);
 
   if (result != 0) {
-    perror("error on vmprotect");
+    printf("error calling vm_protect: %s (response value: %d)\n", mach_error_string(result), result);
   }
 }
 
