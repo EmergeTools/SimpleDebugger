@@ -14,6 +14,7 @@
 #import <mach/mach.h>
 #import <libgen.h>
 #import <os/log.h>
+#import <mach-o/dyld_images.h>
 
 #include "mach_messages.h"
 
@@ -22,7 +23,15 @@
 
 SimpleDebugger::SimpleDebugger() : exceptionPort(MACH_PORT_NULL) {}
 
+void replace_image_notifier(enum dyld_image_mode mode, uint32_t infoCount, const struct dyld_image_info info[]) { }
+
 bool SimpleDebugger::startDebugging() {
+  struct task_dyld_info dyld_info;
+  mach_msg_type_number_t count = TASK_DYLD_INFO_COUNT;
+  task_info(mach_task_self_, TASK_DYLD_INFO, (task_info_t)&dyld_info, &count);
+  struct dyld_all_image_infos *infos = (struct dyld_all_image_infos *)dyld_info.all_image_info_addr;
+  infos->notification = replace_image_notifier;
+
   if (mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &exceptionPort) != KERN_SUCCESS) {
     return false;
   }
