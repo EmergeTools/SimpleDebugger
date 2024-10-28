@@ -40,12 +40,17 @@ bool SimpleDebugger::startDebugging() {
     return false;
   }
 
-  if (task_set_exception_ports(mach_task_self(),
-                               EXC_MASK_BREAKPOINT,
-                               exceptionPort,
-                               EXCEPTION_DEFAULT,
-                               ARM_THREAD_STATE64) != KERN_SUCCESS) {
-    return false;
+  if (task_set_exception_ports(
+    mach_task_self(),
+    // Register for EXC_MASK_BAD_ACCESS to catch cases where a thread
+    // is trying to access a page that we are in the middle of changing.
+    // It temporarily has execute permissions removed so could trigger this.
+    // When it is triggered we should ignore it and retry the original instruction.
+    EXC_MASK_BREAKPOINT | EXC_MASK_BAD_ACCESS,
+    exceptionPort,
+    EXCEPTION_DEFAULT,
+    ARM_THREAD_STATE64) != KERN_SUCCESS) {
+      return false;
   }
 
   m.lock();
@@ -159,14 +164,11 @@ void SimpleDebugger::continueFromBreak(MachExceptionMessage exceptionMessage, ar
   if (originalInstruction.contains(state.__pc)) {
     uint32_t orig = originalInstruction.at(state.__pc);
     setInstruction(state.__pc, orig);
+    originalInstruction.erase(state.__pc);
   } else {
-    // Address was not tracked, increment the pc and continue
-    state.__pc += 4;
-
-    kern_return_t kr = thread_set_state(exceptionMessage.thread.name, ARM_THREAD_STATE64, (thread_state_t)&state, state_count);
-    if (kr != KERN_SUCCESS) {
-        printf("Error setting thread state: %s\n", mach_error_string(kr));
-    }
+    // Address was not tracked, do nothing. Maybe this was a thread that hit the breakpoint
+    // at the same time another thread cleared it.
+    printf("Unexpected not tracked address\n");
   }
 
   MachReplyMessage replyMessage = {{0}};
