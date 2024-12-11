@@ -17,6 +17,7 @@
 #import <mach-o/dyld_images.h>
 
 #include "mach_messages.h"
+#include "emg_vm_protect.h"
 
 #include <mach/exception.h>
 #include <mach/arm/thread_state.h>
@@ -67,7 +68,7 @@ void SimpleDebugger::setExceptionCallback(ExceptionCallback callback) {
 #define ARM64_BREAK_INSTRUCTION 0xD4200000
 
 void protectPage(vm_address_t address, vm_size_t size, vm_prot_t newProtection) {
-  kern_return_t result = vm_protect(mach_task_self(), address, size, 0, newProtection);
+  kern_return_t result = emg_vm_protect(mach_task_self(), address, size, 0, newProtection);
 
   if (result != 0) {
     printf("error calling vm_protect: %s (response value: %d)\n", mach_error_string(result), result);
