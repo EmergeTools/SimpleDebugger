@@ -5,7 +5,13 @@
 //  Created by Noah Martin on 10/9/24.
 //
 
-#if defined(__arm64__) || defined(__aarch64__)
+#if TARGET_OS_TV || TARGET_OS_WATCH || !(defined(__arm64__) || defined(__aarch64__))
+  #define EMG_ENABLE_MACH_APIS 0
+#else
+  #define EMG_ENABLE_MACH_APIS 1
+#endif
+
+#if EMG_ENABLE_MACH_APIS
 
 #ifdef __cplusplus
 extern "C++" {

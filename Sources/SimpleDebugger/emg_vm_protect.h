@@ -7,8 +7,6 @@
 
 #import <mach/mach.h>
 
-#if defined(__arm64__) || defined(__aarch64__)
-
 #ifndef EMG_VM_PROTECT
 #define EMG_VM_PROTECT
 
@@ -20,8 +18,6 @@ kern_return_t emg_vm_protect(mach_port_t target, mach_vm_address_t address, mach
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif
 
 #endif
