@@ -21,7 +21,7 @@ struct MachExceptionMessage;
 
 class SimpleDebugger {
 public:
-  using ExceptionCallback = std::function<void(arm_thread_state64_t state, std::function<void()>)>;
+  using ExceptionCallback = std::function<void(mach_port_t thread, arm_thread_state64_t state, std::function<void(bool removeBreak)>)>;
 
   SimpleDebugger();
 
@@ -40,7 +40,7 @@ private:
 
   static void* exceptionServerWrapper(void* arg);
   void* exceptionServer();
-  void continueFromBreak(MachExceptionMessage exceptionMessage, arm_thread_state64_t state, mach_msg_type_number_t state_count);
+  void continueFromBreak(bool removeBreak, MachExceptionMessage exceptionMessage, arm_thread_state64_t state, mach_msg_type_number_t state_count);
 };
 }
 #endif

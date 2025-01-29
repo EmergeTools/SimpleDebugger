@@ -146,11 +146,11 @@ void* SimpleDebugger::exceptionServer() {
           printf("Error getting thread state: %s\n", mach_error_string(kr));
       }
       if (exceptionCallback) {
-        exceptionCallback(state, [this, exceptionMessage, state, state_count]() {
-              continueFromBreak(exceptionMessage, state, state_count);
+        exceptionCallback(thread, state, [this, exceptionMessage, state, state_count](bool removeBreak) {
+              continueFromBreak(removeBreak, exceptionMessage, state, state_count);
           });
       } else {
-        continueFromBreak(exceptionMessage, state, state_count);
+        continueFromBreak(true, exceptionMessage, state, state_count);
       }
     } else {
         os_log(OS_LOG_DEFAULT, "Not breakpoint message");
@@ -160,16 +160,18 @@ void* SimpleDebugger::exceptionServer() {
   return nullptr;
 }
 
-void SimpleDebugger::continueFromBreak(MachExceptionMessage exceptionMessage, arm_thread_state64_t state, mach_msg_type_number_t state_count) {
+void SimpleDebugger::continueFromBreak(bool removeBreak, MachExceptionMessage exceptionMessage, arm_thread_state64_t state, mach_msg_type_number_t state_count) {
 
-  if (originalInstruction.contains(state.__pc)) {
-    uint32_t orig = originalInstruction.at(state.__pc);
-    setInstruction(state.__pc, orig);
-    originalInstruction.erase(state.__pc);
-  } else {
-    // Address was not tracked, do nothing. Maybe this was a thread that hit the breakpoint
-    // at the same time another thread cleared it.
-    printf("Unexpected not tracked address\n");
+  if (removeBreak) {
+    if (originalInstruction.contains(state.__pc)) {
+      uint32_t orig = originalInstruction.at(state.__pc);
+      setInstruction(state.__pc, orig);
+      originalInstruction.erase(state.__pc);
+    } else {
+      // Address was not tracked, do nothing. Maybe this was a thread that hit the breakpoint
+      // at the same time another thread cleared it.
+      printf("Unexpected not tracked address\n");
+    }
   }
 
   MachReplyMessage replyMessage = {{0}};
