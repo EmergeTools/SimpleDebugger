@@ -5,9 +5,9 @@
 //  Created by Noah Martin on 10/9/24.
 //
 
-#if defined(__arm64__) || defined(__aarch64__)
-
 #include "SimpleDebugger.h"
+
+#if EMG_ENABLE_MACH_APIS
 
 #import <pthread.h>
 #import <mutex>

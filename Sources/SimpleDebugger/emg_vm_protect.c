@@ -5,10 +5,12 @@
 //  Created by Noah Martin on 12/10/24.
 //
 
+#include "SimpleDebugger.h"
+
+#if EMG_ENABLE_MACH_APIS
+
 #import "emg_vm_protect.h"
 #import <mach/mach.h>
-
-#if defined(__arm64__) || defined(__aarch64__)
 
 extern kern_return_t _kern_rpc_emg_vm_prot_trap(
   mach_port_name_t target,
