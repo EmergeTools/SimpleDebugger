@@ -104,6 +104,28 @@ uint32_t setInstruction(vm_address_t address, uint32_t newInst) {
   return instruction;
 }
 
+int SimpleDebugger::hookFunction(void *originalFunc, void *newFunc) {
+  uintptr_t addr = reinterpret_cast<uintptr_t>(newFunc);
+  uint8_t reg = 9;
+  for (int shift = 0; shift <= 48; shift += 16) {
+    uint16_t imm16 = (addr >> shift) & 0xFFFF;
+
+    uint32_t inst;
+    if (shift == 0) {
+      // First instruction: MOVZ
+      inst = 0xD2800000 | (imm16 << 5) | reg;
+    } else {
+      // Subsequent instructions: MOVK
+      uint32_t shift_enc = (shift / 16) << 21;
+      inst = 0xF2800000 | shift_enc | (imm16 << 5) | reg;
+    }
+    setInstruction((vm_address_t) originalFunc + 4 * (shift/16), inst);
+  }
+  // Make sure address fits into 16 bits
+  setInstruction((vm_address_t) originalFunc + (4 * 4), 0xD61F0120); // Branch to X9
+  return 0;
+}
+
 void SimpleDebugger::setBreakpoint(vm_address_t address) {
   uint32_t instruction = setInstruction(address, ARM64_BREAK_INSTRUCTION);
   originalInstruction.insert({address, instruction});
