@@ -13,6 +13,15 @@ Create an instance of SimpleDebugger like so:
 SimpleDebugger *debugger = new SimpleDebugger();
 ```
 
+## Hook functions
+
+Hook functions using the `hookFunction(void *originalFunc, void *newFunc)` method. The originalFunction must be at
+least 5 instructions long, if not you will get undefined behavior.
+
+After the hook is added all calls to originalFunc will go to newFunc. Make sure the signature for newFunc exactly
+matches originalFunc. Once a hook is added it is active for the lifetime of the process. There is not a way to
+call the original function from the hooked function.
+
 ## Set breakpoints
 
 Set breakpoints using the `setBreakpoint(vm_address_t address)` method. The provided address must be in the __TEXT/__text section (the memory region containing executable code).
@@ -47,6 +56,25 @@ __attribute__((constructor)) void setup() {
 
   // The breakpoint handler will run before myFunction
   myFunction();
+}
+```
+
+This example hooks the `gettimeofday` function:
+
+```c++
+#include <SimpleDebugger.h>
+
+SimpleDebugger *handler;
+
+int gettimeofday_new(struct timeval *t, void *a) {
+  t->tv_sec = 1723532400;
+  t->tv_usec = 0;
+  return 0;
+}
+
+void hookTime() {
+  handler = new SimpleDebugger();
+  handler->hookFunction((void *) &gettimeofday, (void *) &gettimeofday_new);
 }
 ```
 
