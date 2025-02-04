@@ -35,6 +35,9 @@ public:
   void setExceptionCallback(ExceptionCallback callback);
   void setBreakpoint(vm_address_t address);
 
+  // The function at originalFunc must be at least 5 instructions
+  int hookFunction(void *originalFunc, void *newFunc);
+
   ~SimpleDebugger();
 
 private:
