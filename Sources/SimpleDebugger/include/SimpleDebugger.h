@@ -28,11 +28,14 @@ struct MachExceptionMessage;
 class SimpleDebugger {
 public:
   using ExceptionCallback = std::function<void(mach_port_t thread, arm_thread_state64_t state, std::function<void(bool removeBreak)>)>;
+  
+  using BadAccessCallback = std::function<void(mach_port_t thread, arm_thread_state64_t state)>;
 
   SimpleDebugger();
 
   bool startDebugging();
   void setExceptionCallback(ExceptionCallback callback);
+  void setBadAccessCallback(BadAccessCallback callback);
   void setBreakpoint(vm_address_t address);
 
   // The function at originalFunc must be at least 5 instructions
@@ -45,6 +48,7 @@ private:
   pthread_t serverThread;
   std::mutex m;
   ExceptionCallback exceptionCallback;
+  BadAccessCallback badAccessCallback;
   std::unordered_map<vm_address_t, uint32_t> originalInstruction;
 
   static void* exceptionServerWrapper(void* arg);
