@@ -65,6 +65,10 @@ void SimpleDebugger::setExceptionCallback(ExceptionCallback callback) {
     exceptionCallback = std::move(callback);
 }
 
+void SimpleDebugger::setBadAccessCallback(BadAccessCallback callback) {
+  badAccessCallback = std::move(callback);
+}
+
 #define ARM64_BREAK_INSTRUCTION 0xD4200000
 
 void protectPage(vm_address_t address, vm_size_t size, vm_prot_t newProtection) {
@@ -157,16 +161,17 @@ void* SimpleDebugger::exceptionServer() {
       os_log(OS_LOG_DEFAULT, "Error receiving message");
       continue;
     }
+    
+    mach_port_t thread = exceptionMessage.thread.name;
+    arm_thread_state64_t state;
+    mach_msg_type_number_t state_count = ARM_THREAD_STATE64_COUNT;
+
+    kr = thread_get_state(thread, ARM_THREAD_STATE64, (thread_state_t)&state, &state_count);
+    if (kr != KERN_SUCCESS) {
+        printf("Error getting thread state: %s\n", mach_error_string(kr));
+    }
 
     if (exceptionMessage.exception == EXC_BREAKPOINT) {
-      mach_port_t thread = exceptionMessage.thread.name;
-      arm_thread_state64_t state;
-      mach_msg_type_number_t state_count = ARM_THREAD_STATE64_COUNT;
-
-      kern_return_t kr = thread_get_state(thread, ARM_THREAD_STATE64, (thread_state_t)&state, &state_count);
-      if (kr != KERN_SUCCESS) {
-          printf("Error getting thread state: %s\n", mach_error_string(kr));
-      }
       if (exceptionCallback) {
         exceptionCallback(thread, state, [this, exceptionMessage, state, state_count](bool removeBreak) {
               continueFromBreak(removeBreak, exceptionMessage, state, state_count);
@@ -176,6 +181,10 @@ void* SimpleDebugger::exceptionServer() {
       }
     } else {
         os_log(OS_LOG_DEFAULT, "Not breakpoint message");
+      if (badAccessCallback) {
+        badAccessCallback(thread, state);
+      }
+      continueFromBreak(false, exceptionMessage, state, state_count);
     }
   }
 
