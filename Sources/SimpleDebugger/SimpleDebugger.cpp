@@ -203,6 +203,7 @@ void SimpleDebugger::continueFromBreak(bool removeBreak, MachExceptionMessage ex
       // at the same time another thread cleared it.
       printf("Unexpected not tracked address\n");
     }
+    // TODO: user KERN_FAILURE as the returnCode
   }
 
   MachReplyMessage replyMessage = {{0}};
