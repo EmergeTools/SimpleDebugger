@@ -172,38 +172,63 @@ void* SimpleDebugger::exceptionServer() {
     }
 
     if (exceptionMessage.exception == EXC_BREAKPOINT) {
-      if (exceptionCallback) {
-        exceptionCallback(thread, state, [this, exceptionMessage, state, state_count](bool removeBreak) {
-              continueFromBreak(removeBreak, exceptionMessage, state, state_count);
+      if (exceptionCallback && originalInstruction.contains(state.__pc)) {
+        exceptionCallback(thread, state, [this, thread, exceptionMessage, state, state_count](bool removeBreak) {
+              continueFromBreak(thread, removeBreak, exceptionMessage, state, state_count);
           });
       } else {
-        continueFromBreak(true, exceptionMessage, state, state_count);
+        continueFromBreak(thread, false, exceptionMessage, state, state_count);
       }
     } else {
         os_log(OS_LOG_DEFAULT, "Not breakpoint message");
       if (badAccessCallback) {
         badAccessCallback(thread, state);
       }
-      continueFromBreak(false, exceptionMessage, state, state_count);
+      continueFromBreak(thread, false, exceptionMessage, state, state_count);
     }
   }
 
   return nullptr;
 }
 
-void SimpleDebugger::continueFromBreak(bool removeBreak, MachExceptionMessage exceptionMessage, arm_thread_state64_t state, mach_msg_type_number_t state_count) {
+static void setSingleStep(thread_t thread, bool enable) {
+  arm_debug_state64_t dbg = {};
+  mach_msg_type_number_t count = ARM_DEBUG_STATE64_COUNT;
 
-  if (removeBreak) {
+  kern_return_t kr = thread_get_state(thread,
+                                      ARM_DEBUG_STATE64,
+                                      (thread_state_t)&dbg,
+                                      &count);
+  if (kr != KERN_SUCCESS) return;
+
+  // MDSCR_EL1.SS is bit 0 on ARMv8 (single-step enable).
+  if (enable) dbg.__mdscr_el1 |= 1ULL;
+  else        dbg.__mdscr_el1 &= ~1ULL;
+
+  thread_set_state(thread,
+                   ARM_DEBUG_STATE64,
+                   (thread_state_t)&dbg,
+                   ARM_DEBUG_STATE64_COUNT);
+}
+
+void SimpleDebugger::continueFromBreak(mach_port_t thread, bool removeBreak, MachExceptionMessage exceptionMessage, arm_thread_state64_t state, mach_msg_type_number_t state_count) {
+
     if (originalInstruction.contains(state.__pc)) {
       uint32_t orig = originalInstruction.at(state.__pc);
       setInstruction(state.__pc, orig);
-      originalInstruction.erase(state.__pc);
+
+      if (removeBreak) {
+        originalInstruction.erase(state.__pc);
+      } else {
+        setSingleStep(thread, true);
+      }
     } else {
-      // Address was not tracked, do nothing. Maybe this was a thread that hit the breakpoint
-      // at the same time another thread cleared it.
-      printf("Unexpected not tracked address\n");
+      // This is expected to be called on single step
+      // Re-enable the breakpoint
+      setBreakpoint(state.__pc - 4);
+      // Disable single step
+      setSingleStep(thread, false);
     }
-  }
 
   MachReplyMessage replyMessage = {{0}};
 

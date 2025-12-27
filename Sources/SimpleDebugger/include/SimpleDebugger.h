@@ -53,7 +53,7 @@ private:
 
   static void* exceptionServerWrapper(void* arg);
   void* exceptionServer();
-  void continueFromBreak(bool removeBreak, MachExceptionMessage exceptionMessage, arm_thread_state64_t state, mach_msg_type_number_t state_count);
+  void continueFromBreak(mach_port_t thread, bool removeBreak, MachExceptionMessage exceptionMessage, arm_thread_state64_t state, mach_msg_type_number_t state_count);
 };
 }
 #endif
